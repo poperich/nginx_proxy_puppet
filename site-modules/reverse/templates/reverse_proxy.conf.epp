@@ -1,0 +1,36 @@
+<%- | $reverse_ip_1 = '10.10.10.10',
+      $reverse_ip_2 = '20.20.20.20',
+      $server_name  = 'domain.com;',
+      $source_location_1  = '/',
+      $source_location_2  = '/resource',
+      $nginx_reverse_config_file = '/etc/nginx/conf.d/reverse_proxy.conf', | -%>
+# This file is managed by Puppet. Please do not make manual changes.
+
+log_format upstreamlog '[$time_local] $remote_addr - $remote_user - $server_name $host to: $upstream_addr: $request $status upstream_response_time $upstream_response_time msec $msec request_time $request_time';
+
+
+upstream backend_default {
+    server <%= $reverse_ip_1 %>;
+}
+upstream backend_resource {
+    server <%= $reverse_ip_2 %>;
+}
+
+server {
+    listen 443;
+
+    server_name $server_name;
+
+    access_log /var/log/nginx/reverse-access.log upstreamlog;
+    error_log /var/log/nginx/reverse-error.log;
+
+    location <%= $source_location_1 %>{
+      proxy_pass https://backend_default;
+      health_check;
+    }
+    location <%= $source_location_2 %> {
+      proxy_pass https://backend_resource;
+      health_check;
+    }
+}
+
